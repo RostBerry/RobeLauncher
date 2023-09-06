@@ -1,0 +1,4 @@
+C:\Users\User\Documents\RobeChess\Core\obj\Debug\netstandard2.1\Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\RobeChess\Core\obj\Debug\netstandard2.1\Core.AssemblyInfoInputs.cache
+C:\Users\User\Documents\RobeChess\Core\obj\Debug\netstandard2.1\Core.AssemblyInfo.cs
+C:\Users\User\Documents\RobeChess\Core\obj\Debug\netstandard2.1\Core.csproj.CoreCompileInputs.cache
