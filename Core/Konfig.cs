@@ -1,4 +1,6 @@
-﻿namespace Core {
+﻿using System.Diagnostics.Contracts;
+
+namespace Core {
 
     public static class Konfig {
 
@@ -15,6 +17,7 @@
         private static GameMode _gameModeChess = GameMode.PvP;
         private static GameMode _gameModeTicTacToe  = GameMode.PvP;
         private static GameMode _gameModeShogi = GameMode.PvP;
+        private static string _chessPiecesPack = "2/";
 
 
 
@@ -57,6 +60,11 @@
         public static GameMode GameModeShogi {
             get {return _gameModeShogi;}
             set { _gameModeShogi = value;}
+        }
+
+        public static string ChessPiecesPack {
+            get {return _chessPiecesPack;}
+            set { _chessPiecesPack = value;}
         }
         
     }

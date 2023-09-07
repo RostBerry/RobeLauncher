@@ -1,4 +1,7 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Chess;
+using Core;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -6,13 +9,14 @@ namespace GUI;
 
 public class RobeGUI : Game
 {
-    Texture2D wKing;
-    private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
+    private int PieceSize;
+    private Texture2D wKing;
+    private GraphicsDeviceManager Graphics;
+    private SpriteBatch sBatch;
 
     public RobeGUI()
     {
-        _graphics = new GraphicsDeviceManager(this);
+        Graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
     }
@@ -20,16 +24,27 @@ public class RobeGUI : Game
     protected override void Initialize()
     {
         // TODO: Add your initialization logic here
+        PieceSize = Konfig.ChessSquareSize;
+
+        Graphics.PreferMultiSampling = true;
+        Graphics.GraphicsProfile = GraphicsProfile.HiDef;
+
+        Graphics.PreferredBackBufferWidth = 1080;
+        Graphics.PreferredBackBufferHeight = 720;
+
+        Graphics.ApplyChanges();
 
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
+        sBatch = new SpriteBatch(GraphicsDevice);
 
         // TODO: use this.Content to load your game content here
-        wKing = Content.Load<Texture2D>("2/9");
+        wKing = Content.Load<Texture2D>(Konfig.ChessPiecesPack + "9");
+
+        GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
     }
 
     protected override void Update(GameTime gameTime)
@@ -38,6 +53,7 @@ public class RobeGUI : Game
             Exit();
 
         // TODO: Add your update logic here
+        KeyboardState keystate = Keyboard.GetState();
 
         base.Update(gameTime);
     }
@@ -47,9 +63,9 @@ public class RobeGUI : Game
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         // TODO: Add your drawing code here
-        _spriteBatch.Begin();
-        _spriteBatch.Draw(wKing, new Vector2(0, 0), Color.White);
-        _spriteBatch.End();
+        sBatch.Begin();
+        sBatch.Draw(wKing, new Rectangle(0, 0, PieceSize, PieceSize), Color.White);
+        sBatch.End();
 
         base.Draw(gameTime);
     }

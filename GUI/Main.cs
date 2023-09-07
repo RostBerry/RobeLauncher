@@ -1,6 +1,4 @@
-﻿
-using Chess;
-using GUI;
+﻿using GUI;
 
 namespace Robe {
     public class RobeLauncher {
