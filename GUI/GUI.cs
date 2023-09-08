@@ -26,9 +26,6 @@ public class RobeGUI : Game
         // TODO: Add your initialization logic here
         PieceSize = Konfig.ChessSquareSize;
 
-        Graphics.PreferMultiSampling = true;
-        Graphics.GraphicsProfile = GraphicsProfile.HiDef;
-
         Graphics.PreferredBackBufferWidth = 1080;
         Graphics.PreferredBackBufferHeight = 720;
 
@@ -42,9 +39,28 @@ public class RobeGUI : Game
         sBatch = new SpriteBatch(GraphicsDevice);
 
         // TODO: use this.Content to load your game content here
-        wKing = Content.Load<Texture2D>(Konfig.ChessPiecesPack + "9");
+        Texture2D wking = Content.Load<Texture2D>(Konfig.ChessPiecesPack + "9");
+        wKing = new Texture2D(GraphicsDevice, PieceSize, PieceSize);
+
+        Color[] data = new Color[wking.Width * wking.Height];
+        wking.GetData(data);
 
         GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
+
+        Color[] newData = new Color[PieceSize * PieceSize];
+        for (int y = 0; y < PieceSize; y++)
+        {
+            for (int x = 0; x < PieceSize; x++)
+            {
+                int sourceX = x * wking.Width / PieceSize;
+                int sourceY = y * wking.Height / PieceSize;
+
+                newData[x + y * PieceSize] = data[sourceX + sourceY * wking.Width];
+            }
+        }
+
+        wKing.SetData(newData);
+
     }
 
     protected override void Update(GameTime gameTime)
