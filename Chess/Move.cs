@@ -1,19 +1,19 @@
 namespace Chess {
     public struct Move {
 
-        public static readonly uint RegularMove = 0;
-        public static readonly uint Capture = 1;
-        public static readonly uint QueenPromotion = Piece.Queen;
-        public static readonly uint KnightPromotion = Piece.Knight;
-        public static readonly uint RookPromotion = Piece.Rook;
-        public static readonly uint BishopPromotion = Piece.Bishop;
+        public static readonly int RegularMove = 0;
+        public static readonly int Capture = 1;
+        public static readonly int QueenPromotion = Piece.Queen;
+        public static readonly int KnightPromotion = Piece.Knight;
+        public static readonly int RookPromotion = Piece.Rook;
+        public static readonly int BishopPromotion = Piece.Bishop;
 
 
         public readonly int StartSquare;
         public readonly int TargetSquare;
-        public readonly uint Flag;
+        public readonly int Flag;
         
-        public Move(int startSquare, int targetSquare, uint flag = 0) {
+        public Move(int startSquare, int targetSquare, int flag = 0) {
             StartSquare = startSquare;
             TargetSquare = targetSquare;
             Flag = flag;
@@ -47,14 +47,14 @@ namespace Chess {
 
         public readonly override string ToString()
         {
-            string flagSym = 3 <= Flag && Flag <= 6 ? new string(ChessUtils.BinToPieceSym[Flag], 1): "";
+            string flagSym = 3 <= Flag && Flag <= 6 ? new string(Board.BinToPieceSym[Flag], 1): "";
             return $"{ToSquareName(StartSquare)}{ToSquareName(TargetSquare)}{flagSym}";
         }
 
         public static Move FromUci(string uci) {
-            uint flag = 0;
+            int flag = 0;
             if (uci.Length == 5) {
-                flag = ChessUtils.PieceSymToBin[uci[4]];
+                flag = Board.PieceSymToBin[uci[4]];
                 uci = uci.Remove(4);
             }
             string startSquareName = uci[..2];
@@ -67,9 +67,9 @@ namespace Chess {
         public static string ToUci(Move move) {
             string output = ToSquareName(move.StartSquare);
             output += ToSquareName(move.TargetSquare);
-            uint flag = move.Flag;
+            int flag = move.Flag;
             if (flag != 0) {
-                output += ChessUtils.BinToPieceSym[flag];
+                output += Board.BinToPieceSym[flag];
             }
             return output;
         }

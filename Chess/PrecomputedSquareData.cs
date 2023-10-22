@@ -3,7 +3,7 @@
 namespace Chess {
     public static class PrecomputedSquareData {
 
-        private static readonly Dictionary<int, char> NumToLetter = new() 
+        private static readonly Dictionary<int, char> NumToBoardLetter = new() 
         {
             { 0, 'a'},
             { 1, 'b'},
@@ -34,7 +34,7 @@ namespace Chess {
             for (int y = 7; y >= 0; y--) {
                 for (int x = 0; x < 8; x++) {
                     int square = x + y * 8;
-                    char squareNameLetter = NumToLetter[x];
+                    char squareNameLetter = NumToBoardLetter[x];
                     string squareName = $"{squareNameLetter}{y + 1}";
                     squareNameToSquare.Add(squareName, square);
                     squareToSquareName.Add(square, squareName);

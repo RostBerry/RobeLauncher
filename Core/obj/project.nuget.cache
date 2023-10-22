@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "vvvx2Z9U+wr6nv8cXttlkwmfjmlomcTWfqbkkIRmChZGe1EH4EX1zB3hZVru+bHWUJnAA3qk5Sy8VtANN7wkhA==",
+  "dgSpecHash": "jEvbMTeXIs/Hd9AmGK31h5RyL9ehissxPd66XmQAuuvEb+rYi3rZD2FXF8YmSvIES5odh9aQ1JseaWhGDtBziw==",
   "success": true,
-  "projectFilePath": "c:\\Users\\User\\Documents\\RobeLauncher\\Core\\Core.csproj",
+  "projectFilePath": "C:\\Users\\User\\Documents\\RobeLauncher\\Core\\Core.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

@@ -1,5 +1,5 @@
 namespace Core {
-    public enum GameStatus {
+    public enum GameState {
         Running,
         WhiteWon,
         BlackWon,

@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"dotnet.defaultSolution": "Core.sln",
+		"godot_tools.scene_file_config": "c:\\Users\\User\\Documents\\RobeLauncher\\MainGUI"
+	}
+}

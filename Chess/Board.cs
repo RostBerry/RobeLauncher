@@ -3,27 +3,50 @@
 namespace Chess {
 
     public class Board {
+
+        public static readonly Dictionary<char, int> PieceSymToBin = new()
+        {
+            {' ', Piece.None},
+            {'K', Piece.White | Piece.King},
+            {'k', Piece.Black | Piece.King},
+            {'P', Piece.White | Piece.Pawn},
+            {'p', Piece.Black | Piece.Pawn},
+            {'N', Piece.White | Piece.Knight},
+            {'n', Piece.Black | Piece.Knight},
+            {'B', Piece.White | Piece.Bishop},
+            {'b', Piece.Black | Piece.Bishop},
+            {'R', Piece.White | Piece.Rook},
+            {'r', Piece.Black | Piece.Rook},
+            {'Q', Piece.White | Piece.Queen},
+            {'q', Piece.Black | Piece.Queen}
+        };
+
+        public static readonly Dictionary<int, char> BinToPieceSym = 
+            PieceSymToBin.ToDictionary(pair => pair.Value, pair => pair.Key);
+
+        public enum CastlingStatus {
+            BothSides,
+            ShortSide,
+            LongSide,
+            None
+        }
+
         
-        public Dictionary<int, uint> AllSquaresWithPieces = new(); //{square, piece}
+        public Dictionary<int, int> AllSquaresWithPieces = new(); //{square, piece}
         public int[] KingSquare = new int[2];
-        public List<int>[] SquaresWithPawns = new List<int>[2];
-        public List<int>[] SquaresWithKnights = new List<int>[2];
-        public List<int>[] SquaresWithBishops = new List<int>[2];
-        public List<int>[] SquaresWithRooks = new List<int>[2];
-        public List<int>[] SquaresWithQueens = new List<int>[2];
         public ulong[] AllPiecesBitboard = new ulong[2]; //{all white pieces bitboard, all black pieces bitboard} 
-        public Dictionary<uint, ulong>[] PiecesBitboards = new Dictionary<uint, ulong>[2]; //{{piece, bitboard}, {piece, bitboard}}
+        public Dictionary<int, ulong>[] PiecesBitboards = new Dictionary<int, ulong>[2]; //{{piece, bitboard}, {piece, bitboard}}
         public ulong EmptySquaresBitboard; // 0000000000000000111111111111111111111111111111110000000000000000 or smth like that
         public ulong AllOccupiedSquaresBitboard; //1111111111111111000000000000000000000000000000001111111111111111 or smth like that
 
 
-        public uint CurrentColor;
-        public uint OppositeColor;
+        public int CurrentColor;
+        public int OppositeColor;
         public int CurrentColorIndex;
         public int OppositeColorIndex;
         public bool IsWhite;
 
-        public GameStatus GameState;
+        public GameState CurrentGameState;
 
         public CastlingStatus[] CastlingStates;
 
@@ -32,7 +55,7 @@ namespace Chess {
             ClearSquares();
             CurrentColor = Piece.White;  
             UpdateColors();   
-            GameState = GameStatus.Running;       
+            CurrentGameState = GameState.Running;       
 
             CastlingStates = new CastlingStatus[2];
         }
@@ -45,7 +68,7 @@ namespace Chess {
                 
                 AllPiecesBitboard[index] = 0;
 
-                PiecesBitboards[index] = new Dictionary<uint, ulong>
+                PiecesBitboards[index] = new Dictionary<int, ulong>
                 {
                     { Piece.King, 0 },
                     { Piece.Pawn, 0 },
@@ -56,11 +79,6 @@ namespace Chess {
                 };
 
                 KingSquare[index] = -1;
-                SquaresWithPawns[index] = new List<int>();
-                SquaresWithKnights[index] = new List<int>();
-                SquaresWithBishops[index] = new List<int>();
-                SquaresWithRooks[index] = new List<int>();
-                SquaresWithQueens[index] = new List<int>();
             }
 
             EmptySquaresBitboard = GetEmptySquaresBitboard();
@@ -85,9 +103,9 @@ namespace Chess {
         }
 
 
-        private void CreatePiece(uint piece, int square) {
-            uint pieceColor = Piece.GetColor(piece);
-            uint pieceType = Piece.GetType(piece);
+        private void CreatePiece(int piece, int square) {
+            int pieceColor = Piece.GetColor(piece);
+            int pieceType = Piece.GetType(piece);
             int colorIndex = pieceColor == Piece.White ? 0: 1;
 
             AllPiecesBitboard[colorIndex] |= (ulong)1 << square;
@@ -95,34 +113,14 @@ namespace Chess {
 
             AllSquaresWithPieces.Add(square, piece);
 
-            switch (pieceType) {
-                case 1:
-                    KingSquare[colorIndex] = square;
-                    break;
-                case 2:
-                    SquaresWithPawns[colorIndex].Add(square);
-                    break;
-                case 3:
-                    SquaresWithKnights[colorIndex].Add(square);
-                    break;
-                case 4:
-                    SquaresWithBishops[colorIndex].Add(square);
-                    break;
-                case 5:
-                    SquaresWithRooks[colorIndex].Add(square);
-                    break;
-                case 6:
-                    SquaresWithQueens[colorIndex].Add(square);
-                    break;
-                default:
-                    Console.WriteLine($"Not good1");
-                    return;
+            if (pieceType == Piece.King) {
+                KingSquare[colorIndex] = square;
             }
         }
 
-        private void DelPiece(uint piece, int square) {
-            uint pieceColor = Piece.GetColor(piece);
-            uint pieceType = Piece.GetType(piece);
+        private void DelPiece(int piece, int square) {
+            int pieceColor = Piece.GetColor(piece);
+            int pieceType = Piece.GetType(piece);
             int colorIndex = pieceColor == Piece.White ? 0: 1;
 
             AllPiecesBitboard[colorIndex] &= ~(1UL << square);
@@ -130,41 +128,21 @@ namespace Chess {
 
             AllSquaresWithPieces.Remove(square);
 
-            switch (pieceType) {
-                case 1:
-                    KingSquare[colorIndex] = -1;
-                    break;
-                case 2:
-                    SquaresWithPawns[colorIndex].Remove(square);
-                    break;
-                case 3:
-                    SquaresWithKnights[colorIndex].Remove(square);
-                    break;
-                case 4:
-                    SquaresWithBishops[colorIndex].Remove(square);
-                    break;
-                case 5:
-                    SquaresWithRooks[colorIndex].Remove(square);
-                    break;
-                case 6:
-                    SquaresWithQueens[colorIndex].Remove(square);
-                    break;
-                default:
-                    Console.WriteLine($"Not good2");
-                    return;
+            if (pieceType == Piece.King) {
+                KingSquare[colorIndex] = -1;
             }
         }
 
-        public ulong GetPieceBitboard(uint piece) {
+        public ulong GetPieceBitboard(int piece) {
             return PiecesBitboards[Piece.GetColorIndex(piece)][Piece.GetType(piece)];
         }
 
-        public uint GetPieceOnSquare(int square) {
+        public int GetPieceOnSquare(int square) {
             return AllSquaresWithPieces[square];
         }
 
         public char GetPieceSymOnSquare(int square) {
-            return ChessUtils.BinToPieceSym[GetPieceOnSquare(square)];
+            return BinToPieceSym[GetPieceOnSquare(square)];
         }
 
         public ulong GetEmptySquaresBitboard() {
@@ -227,7 +205,7 @@ namespace Chess {
                                     x ++;
                                 }
                             } else {
-                                uint piece = ChessUtils.PieceSymToBin[sym];
+                                int piece = PieceSymToBin[sym];
                                 CreatePiece(piece, square);
                                 x++;
                             }
@@ -245,8 +223,8 @@ namespace Chess {
         }
 
         public void Print(bool isBitboard = false, ulong bitboard = 0) {
-            if (Konfig.DoTerminalOutput) {
-                Console.WriteLine(ChessUtils.DecorativeRow);
+            if (Config.DoTerminalOutput) {
+                Console.WriteLine(Config.DecorativeRow);
                 for (int y = 7; y >= 0; y--) {
                     Console.Write("|");
                     for (int x = 0; x < 8; x++) {
@@ -255,14 +233,14 @@ namespace Chess {
                         if (!isBitboard) {
                             pieceSym = AllSquaresWithPieces.ContainsKey(square)? GetPieceSymOnSquare(square): ' ';
                         } else {
-                            pieceSym = BitboardUtils.IsSquareOccupied(bitboard, square)? '1': '0';
+                            pieceSym = Bitboards.IsSquareOccupied(bitboard, square)? '1': '0';
                         }
                         Console.Write($"  {pieceSym}  |");
                     }
                     Console.WriteLine($" {y + 1}");
-                    Console.WriteLine(ChessUtils.DecorativeRow);
+                    Console.WriteLine(Config.DecorativeRow);
                 }
-                Console.WriteLine(ChessUtils.DecorativeLettersRow);
+                Console.WriteLine(Config.DecorativeLettersRow);
             }
 
         }

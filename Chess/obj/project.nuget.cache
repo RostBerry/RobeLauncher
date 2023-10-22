@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "mOJl8KDwENnRbwcCkyRVGIvGJNWbaJHrCIMkweOTW24pnO0eIGanBpR/pXjng/1IrNECV/0pHao2f+UbFI7amg==",
+  "dgSpecHash": "PiPOc4JQZvpiiJNjen7PpV7DQlPyvBmhNWAYU7pDkNwPOOtNe1POJlG/tZdCLDgBTwhYSN3mh27YTZHFY0da9g==",
   "success": true,
-  "projectFilePath": "c:\\Users\\User\\Documents\\RobeLauncher\\Chess\\Chess.csproj",
+  "projectFilePath": "C:\\Users\\User\\Documents\\RobeLauncher\\Chess\\Chess.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }
