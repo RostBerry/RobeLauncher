@@ -1,18 +1,18 @@
 namespace Chess {
     public static class Piece {
-        public static readonly int None   = 0;
-        public static readonly int King   = 1;
-        public static readonly int Pawn   = 2;
-        public static readonly int Knight = 3;
-        public static readonly int Bishop = 4;
-        public static readonly int Rook   = 5;
-        public static readonly int Queen  = 6;
+        public const int None   = 0;
+        public const int King   = 1;
+        public const int Pawn   = 2;
+        public const int Knight = 3;
+        public const int Bishop = 4;
+        public const int Rook   = 5;
+        public const int Queen  = 6;
 
-        public static readonly int White = 8;
-        public static readonly int Black = 16;
+        public const int White = 8;
+        public const int Black = 16;
 
-        public static readonly int ColorMask = White | Black;
-        public static readonly int TypeMask = 7;
+        public const int ColorMask = White | Black;
+        public const int TypeMask = 7;
 
         public static int GetColor(int piece) {
             return piece & ColorMask;

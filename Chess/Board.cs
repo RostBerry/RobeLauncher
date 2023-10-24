@@ -80,9 +80,8 @@ namespace Chess {
 
                 KingSquare[index] = -1;
             }
-
-            EmptySquaresBitboard = GetEmptySquaresBitboard();
-            AllOccupiedSquaresBitboard = ~EmptySquaresBitboard;
+            
+            WriteEmptyAndOccupiedSquares();
         }
 
         public void UpdateColors() {
@@ -145,8 +144,29 @@ namespace Chess {
             return BinToPieceSym[GetPieceOnSquare(square)];
         }
 
-        public ulong GetEmptySquaresBitboard() {
+        private ulong GetEmptySquaresBitboard() {
             return ~(AllPiecesBitboard[0] | AllPiecesBitboard[1]);
+        }
+
+        public static string SquareToSquareName(int square) {
+            return PrecomputedSquareData.SquareNameData.SquareToSquareName[square];
+        }
+
+        public static int SquareNameToSquare(string squareName) {
+            return PrecomputedSquareData.SquareNameData.SquareNameToSquare[squareName];
+        }
+
+        public static int RankFromSquare(int square) {
+            return square >> 3;
+        }
+
+        public static int FileFromSquare(int square) {
+            return square & 0b111;
+        }
+
+        private void WriteEmptyAndOccupiedSquares() {
+            EmptySquaresBitboard = GetEmptySquaresBitboard();
+            AllOccupiedSquaresBitboard = ~EmptySquaresBitboard;
         }
 
 
@@ -220,6 +240,7 @@ namespace Chess {
                 }
             y--;
             }
+            WriteEmptyAndOccupiedSquares();
         }
 
         public void Print(bool isBitboard = false, ulong bitboard = 0) {
@@ -233,7 +254,7 @@ namespace Chess {
                         if (!isBitboard) {
                             pieceSym = AllSquaresWithPieces.ContainsKey(square)? GetPieceSymOnSquare(square): ' ';
                         } else {
-                            pieceSym = Bitboards.IsSquareOccupied(bitboard, square)? '1': '0';
+                            pieceSym = Bitboards.IsSquareOccupied(bitboard, square)? '1': '.';
                         }
                         Console.Write($"  {pieceSym}  |");
                     }

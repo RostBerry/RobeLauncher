@@ -135,22 +135,22 @@ namespace Chess {
         public void Print() {
             Console.WriteLine("All attacked squares: ");
             foreach(int square in AttackedSquares) {
-                Console.Write($"{Move.ToSquareName(square)} ");
+                Console.Write($"{Board.SquareToSquareName(square)} ");
             }
             Console.WriteLine();
             Console.WriteLine("All squares in check: ");
             foreach(int square in SquaresInCheck) {
-                Console.Write($"{Move.ToSquareName(square)} ");
+                Console.Write($"{Board.SquareToSquareName(square)} ");
             }
             Console.WriteLine();
             Console.WriteLine("All squares in X pin: ");
             foreach(int square in SquaresInPinX) {
-                Console.WriteLine($"{Move.ToSquareName(square)} ");
+                Console.WriteLine($"{Board.SquareToSquareName(square)} ");
             }
             Console.WriteLine();
             Console.WriteLine("All squares in Y pin: ");
             foreach(int square in SquaresInPinY) {
-                Console.WriteLine($"{Move.ToSquareName(square)} ");
+                Console.WriteLine($"{Board.SquareToSquareName(square)} ");
             }
             Console.WriteLine();
         }

@@ -95,15 +95,15 @@ namespace Chess {
             for(int y = 7; y >= 0; y--) {
                 for(int x = 0; x < 8; x++) {
                     int square = x + y * 8;
-                    int squareRank = Move.RankFromSquare(square);
-                    int squareFile = Move.FileFromSquare(square);
+                    int squareRank = Board.RankFromSquare(square);
+                    int squareFile = Board.FileFromSquare(square);
 
                     List<int> possibleMoves = new();
 
                     foreach (int offset in knightMovingOffsets) {
                         int targetSquare = square + offset;
-                        int targetSquareRank = Move.RankFromSquare(targetSquare);
-                        int targetSquareFile = Move.FileFromSquare(targetSquare);
+                        int targetSquareRank = Board.RankFromSquare(targetSquare);
+                        int targetSquareFile = Board.FileFromSquare(targetSquare);
 
                         if (targetSquareFile >= 0 && targetSquareFile < 8 && targetSquareRank >= 0 && targetSquareRank < 8 
                             && Math.Abs(squareRank - targetSquareRank) < 3 && Math.Abs(squareFile - targetSquareFile) < 3)

@@ -3,19 +3,19 @@ using System.Numerics;
 namespace Chess {
     public static class Bitboards {
         
-        public static readonly ulong FirstRankMask   = 0xFF;
-        public static readonly ulong SecondRankMask  = 0xFF00;
-        public static readonly ulong ThirdRankMask   = 0xFF0000;
-        public static readonly ulong FourthRankMask  = 0xFF000000;
-        public static readonly ulong FifthRankMask   = 0xFF00000000;
-        public static readonly ulong SixthRankMask   = 0xFF0000000000;
-        public static readonly ulong SeventhRankMask = 0xFF000000000000;
-        public static readonly ulong EighthRankMask  = 0xFF00000000000000;
+        public const ulong FirstRankMask   = 0xFF;
+        public const ulong SecondRankMask  = 0xFF00;
+        public const ulong ThirdRankMask   = 0xFF0000;
+        public const ulong FourthRankMask  = 0xFF000000;
+        public const ulong FifthRankMask   = 0xFF00000000;
+        public const ulong SixthRankMask   = 0xFF0000000000;
+        public const ulong SeventhRankMask = 0xFF000000000000;
+        public const ulong EighthRankMask  = 0xFF00000000000000;
 
-        public static readonly ulong NotFirstFileMask   = 0xFEFEFEFEFEFEFEFE;
-        public static readonly ulong NotEighthFileMask   = 0x7F7F7F7F7F7F7F7F;
+        public const ulong NotFirstFileMask   = 0xFEFEFEFEFEFEFEFE;
+        public const ulong NotEighthFileMask   = 0x7F7F7F7F7F7F7F7F;
 
-        public static readonly ulong FullBoardMask   = 0xFFFFFFFFFFFFFFFF;
+        public const ulong FullBoardMask   = 0xFFFFFFFFFFFFFFFF;
 
 
         public static bool IsSquareOccupied(ulong bitboard, int square) {

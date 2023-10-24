@@ -1,7 +1,6 @@
 ﻿using Chess;
 using Core;
 using System.Diagnostics;
-using System.Threading;
 
 Board board = new();
 board.LoadFromFen(Config.PerftFen, true);
@@ -26,7 +25,7 @@ for (int i = 0; i < repeatCount; i++) {
 
 moveGen = new(board, attackGen, true);
 
-foreach(Move move in moveGen.LegalMoves) {
+foreach(Move move in moveGen.AllMoves) {
     Console.Write($"{move} ");
 }
 
