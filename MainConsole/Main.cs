@@ -25,9 +25,7 @@ for (int i = 0; i < repeatCount; i++) {
 
 moveGen = new(board, attackGen, true);
 
-foreach(Move move in moveGen.AllMoves) {
-    Console.Write($"{move} ");
-}
+moveGen.PrintAllMoves();
 
 
 Console.WriteLine();

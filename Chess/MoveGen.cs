@@ -4,19 +4,30 @@ namespace Chess {
         private readonly Board board;
         private readonly AttackGenerator attackedSquaresGen;
         private readonly bool doSearchLegalMoves;
-        public readonly List<Move> AllMoves = new();
+        private const int MaxMovesPerPos = 218;
+        private readonly Move[] AllMoves = new Move[MaxMovesPerPos];
+        private int movesFound;
 
         public MoveGen(Board board, AttackGenerator attackedSquaresGenerator, bool doSearchLegalMoves) {
             this.board = board;
             attackedSquaresGen = attackedSquaresGenerator;
             this.doSearchLegalMoves = doSearchLegalMoves;
+            movesFound = 0;
 
             GenerateMoves();
         }
 
-        public void ClearMoves() {
-            AllMoves.Clear();
+        private void AddMove(Move move) {
+            AllMoves[movesFound] = move;
+            movesFound++;
         }
+
+        public void PrintAllMoves() {
+            for(int moveIndex = 0; moveIndex < movesFound; moveIndex++) {
+                Console.Write($"{AllMoves[moveIndex]} ");
+            }
+        }
+
         private void GenerateMoves() {
             GeneratePseudoLegalMoves();
         }
@@ -54,7 +65,7 @@ namespace Chess {
                 int targetSquare = Bitboards.GetLS1BSquare(allMovesOneSquare);
                 ulong targetBit = 1UL << targetSquare;
                 
-                AllMoves.Add(new Move(startSquare, targetSquare));
+                AddMove(new Move(startSquare, targetSquare));
 
                 if (allPawnsOnSecondRankToMoveOneSquare != 0) {
                     int twoSquaresTargetSquare = 
@@ -64,7 +75,7 @@ namespace Chess {
                     ulong twoSquaresTargetBit = 1UL << twoSquaresTargetSquare;
 
                     if((twoSquaresTargetBit & board.EmptySquaresBitboard) != 0) {
-                        AllMoves.Add(new Move(startSquare, twoSquaresTargetSquare));
+                        AddMove(new Move(startSquare, twoSquaresTargetSquare));
                     } 
 
                     allPawnsOnSecondRankToMoveOneSquare &= ~startBit;
@@ -94,7 +105,7 @@ namespace Chess {
                 ulong startBit = 1UL << startSquare;
                 ulong targetBit = 1UL << targetSquare;
 
-                AllMoves.Add(new Move(startSquare, targetSquare));
+                AddMove(new Move(startSquare, targetSquare));
 
                 allPawnsToCaptureLeft &= ~startBit;
                 allCapturesLeft &= ~targetBit;
@@ -118,7 +129,7 @@ namespace Chess {
                 ulong startBit = 1UL << startSquare;
                 ulong targetBit = 1UL << targetSquare;
 
-                AllMoves.Add(new Move(startSquare, targetSquare));
+                AddMove(new Move(startSquare, targetSquare));
 
                 allPawnsToCaptureRight &= ~startBit;
                 allCapturesRight &= ~targetBit;
@@ -159,11 +170,11 @@ namespace Chess {
                         break;
                     }
                     if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.OppositeColorIndex], targetSquare)) {
-                        AllMoves.Add(new Move(startSquare, targetSquare));
+                        AddMove(new Move(startSquare, targetSquare));
                         break;
                     }
 
-                    AllMoves.Add(new Move(startSquare, targetSquare));
+                    AddMove(new Move(startSquare, targetSquare));
                 }
             }
         }
@@ -179,10 +190,10 @@ namespace Chess {
                         continue;
                     }
                     if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.OppositeColorIndex], targetSquare)) {
-                        AllMoves.Add(new Move(startSquare, targetSquare));
+                        AddMove(new Move(startSquare, targetSquare));
                         continue;
                     }
-                    AllMoves.Add(new Move(startSquare, targetSquare));
+                    AddMove(new Move(startSquare, targetSquare));
                 }
                 knightsBitboard &= ~Bitboards.BitFromSquare(startSquare);
             }
@@ -195,11 +206,11 @@ namespace Chess {
                     continue;
                 }
                 if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.OppositeColorIndex], targetSquare)) {
-                    AllMoves.Add(new Move(board.KingSquare[board.CurrentColorIndex], targetSquare));
+                    AddMove(new Move(board.KingSquare[board.CurrentColorIndex], targetSquare));
                     continue;
                 }
 
-                AllMoves.Add(new Move(board.KingSquare[board.CurrentColorIndex], targetSquare));
+                AddMove(new Move(board.KingSquare[board.CurrentColorIndex], targetSquare));
             }
         }
     }

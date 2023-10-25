@@ -4,15 +4,44 @@ namespace Chess {
         
         private readonly Board board;
 
-        public List<int> AttackedSquares = new();
-        public List<int> SquaresInCheck = new();
-        public List<int> SquaresInPinX = new();
-        public List<int> SquaresInPinY = new();
+        private const int MaxSquaresInPinPerPos = 20;
+        private const int MaxAttackedSquaresPerPos = 332;
+        private const int MaxSquaresInCheckPerPos = 14;
+        private const int MaxAttackedSquaresPerPiece = 28;
+
+        private readonly int[] AttackedSquares = new int[MaxAttackedSquaresPerPos];
+        private int attackedSquaresFound = 0;
+        private readonly int[] SquaresInCheck = new int[MaxSquaresInCheckPerPos];
+        private int squaresInCheckFound = 0;
+        private readonly int[] SquaresInPinX = new int[MaxSquaresInPinPerPos];
+        private int squaresInPinXFound = 0;
+        private readonly int[] SquaresInPinY = new int[MaxSquaresInPinPerPos];
+        private int squaresInPinYFound = 0;
 
         public AttackGenerator(Board board) {
             this.board = board;
 
             GenerateAllAttacks();
+        }
+
+        private void AddAttackedSquare(int square) {
+            AttackedSquares[attackedSquaresFound] = square;
+            attackedSquaresFound++;
+        }
+
+        private void AddSquareInCheck(int square) {
+            SquaresInCheck[squaresInCheckFound] = square;
+            squaresInCheckFound++;
+        }
+
+        private void AddSquareInPinX(int square) {
+            SquaresInPinX[squaresInPinXFound] = square;
+            squaresInPinXFound++;
+        }
+
+        private void AddSquareInPinY(int square) {
+            SquaresInPinY[squaresInPinYFound] = square;
+            squaresInPinYFound++;
         }
 
         private void GenerateAllAttacks() {
@@ -43,7 +72,7 @@ namespace Chess {
             while(allPawnsAttacksBitboard != 0) {
                 int attackedSquare = Bitboards.GetLS1BSquare(allPawnsAttacksBitboard);
                 ulong attackedBit = 1UL << attackedSquare;
-                AttackedSquares.Add(attackedSquare);
+                AddAttackedSquare(attackedSquare);
                 allPawnsAttacksBitboard &= ~attackedBit;
             }
         }
@@ -91,7 +120,7 @@ namespace Chess {
                             break;
                         }
                     } else {
-                        AttackedSquares.Add(targetSquare);
+                        AddAttackedSquare(targetSquare);
                         squaresInCheck.Add(targetSquare);
                         if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.CurrentColorIndex], targetSquare)) {
                             break;
@@ -118,9 +147,9 @@ namespace Chess {
                 int startSquare = Bitboards.GetLS1BSquare(knightsBitboard);
                 foreach (int targetSquare in PrecomputedSquareData.SquaresForKnight[startSquare]) {
                     if (Bitboards.IsSquareOccupied(board.PiecesBitboards[board.OppositeColorIndex][Piece.King], targetSquare)) {
-                        SquaresInCheck.Add(targetSquare);
+                        AddSquareInCheck(targetSquare);
                     }
-                    AttackedSquares.Add(targetSquare);
+                    AddAttackedSquare(targetSquare);
                 }
                 knightsBitboard &= ~Bitboards.BitFromSquare(startSquare);
             }
@@ -128,7 +157,7 @@ namespace Chess {
 
         private void GenerateAllKingsAttacks() {
             foreach(int targetSquare in PrecomputedSquareData.SquaresForKing[board.KingSquare[board.CurrentColorIndex]]) {
-                AttackedSquares.Add(targetSquare);
+                AddAttackedSquare(targetSquare);
             }
         }
 
