@@ -8,15 +8,17 @@ namespace Chess {
         private const int MaxAttackedSquaresPerPos = 332;
         private const int MaxSquaresInCheckPerPos = 14;
         private const int MaxAttackedSquaresPerPiece = 28;
+        private const int MaxPinLength = 8;
+        private const int MaxCheckRayLength = 7;
 
         private readonly int[] AttackedSquares = new int[MaxAttackedSquaresPerPos];
-        private int attackedSquaresFound = 0;
+        private int AttackedSquaresFound = 0;
         private readonly int[] SquaresInCheck = new int[MaxSquaresInCheckPerPos];
-        private int squaresInCheckFound = 0;
+        private int SquaresInCheckFound = 0;
         private readonly int[] SquaresInPinX = new int[MaxSquaresInPinPerPos];
-        private int squaresInPinXFound = 0;
+        private int SquaresInPinXFound = 0;
         private readonly int[] SquaresInPinY = new int[MaxSquaresInPinPerPos];
-        private int squaresInPinYFound = 0;
+        private int SquaresInPinYFound = 0;
 
         public AttackGenerator(Board board) {
             this.board = board;
@@ -25,23 +27,23 @@ namespace Chess {
         }
 
         private void AddAttackedSquare(int square) {
-            AttackedSquares[attackedSquaresFound] = square;
-            attackedSquaresFound++;
+            AttackedSquares[AttackedSquaresFound] = square;
+            AttackedSquaresFound++;
         }
 
         private void AddSquareInCheck(int square) {
-            SquaresInCheck[squaresInCheckFound] = square;
-            squaresInCheckFound++;
+            SquaresInCheck[SquaresInCheckFound] = square;
+            SquaresInCheckFound++;
         }
 
         private void AddSquareInPinX(int square) {
-            SquaresInPinX[squaresInPinXFound] = square;
-            squaresInPinXFound++;
+            SquaresInPinX[SquaresInPinXFound] = square;
+            SquaresInPinXFound++;
         }
 
         private void AddSquareInPinY(int square) {
-            SquaresInPinY[squaresInPinYFound] = square;
-            squaresInPinYFound++;
+            SquaresInPinY[SquaresInPinYFound] = square;
+            SquaresInPinYFound++;
         }
 
         private void GenerateAllAttacks() {
@@ -96,38 +98,55 @@ namespace Chess {
 
             while (queensBitboard != 0) {
                 int startSquare = Bitboards.GetLS1BSquare(queensBitboard);
-                GenerateRayAttacksForPiece(4, 8, startSquare);
+                GenerateRayAttacksForPiece(0, 8, startSquare);
                 queensBitboard &= ~Bitboards.BitFromSquare(startSquare);
             }
         }
 
         private void GenerateRayAttacksForPiece(int startIndex, int endIndex, int startSquare) {
             for (int dirIndex = startIndex; dirIndex < endIndex; dirIndex++) {
+
                 bool isPin = false;
-                List<int> squaresInPin = new() {startSquare};
-                List<int> squaresInCheck = new() {startSquare};
+                int[] squaresInPin = new int[MaxPinLength];
+                squaresInPin[0] = startSquare;
+                int squaresInPinFound = 1;
+
+                int[] squaresInCheck = new int[MaxCheckRayLength];
+                int squaresInCheckFound = 0;
+
                 for (int n = 0; n < PrecomputedSquareData.SquaresToEdge[startSquare][dirIndex]; n++) {
                     int targetSquare = startSquare + PrecomputedSquareData.MovingOffsets[dirIndex] * (n + 1);
+                    squaresInPin[squaresInPinFound] = targetSquare;
+                    squaresInPinFound++;
                     if (isPin) {
-                        squaresInPin.Add(targetSquare);
-                        if (Bitboards.IsSquareOccupied(board.PiecesBitboards[board.OppositeColorIndex][Piece.King], targetSquare)) {
-                            if ((dirIndex >= 0 && dirIndex <2) || (dirIndex >= 4 && dirIndex <8)) {
-                                SquaresInPinX.AddRange(squaresInPin);
+                        if (targetSquare == board.KingSquare[board.OppositeColorIndex]) {
+                            if (dirIndex <2 || dirIndex >= 4) {
+                                for (int index = 0; index < squaresInPinFound; index++) {
+                                    SquaresInPinX[SquaresInPinXFound] = squaresInPin[index];
+                                    SquaresInPinXFound++;
+                                }
                             }
-                            if ((dirIndex >=2 && dirIndex <4) || (dirIndex >=4 && dirIndex <8)) {
-                                SquaresInPinY.AddRange(squaresInPin);
+                            if (dirIndex >=2) {
+                                for (int index = 0; index < squaresInPinFound; index++) {
+                                    SquaresInPinY[SquaresInPinYFound] = squaresInPin[index];
+                                    SquaresInPinYFound++;
+                                }
                             }
                             break;
                         }
                     } else {
                         AddAttackedSquare(targetSquare);
-                        squaresInCheck.Add(targetSquare);
+                        squaresInCheck[squaresInCheckFound] = targetSquare;
+                        squaresInCheckFound++;
                         if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.CurrentColorIndex], targetSquare)) {
                             break;
                         }
                         if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.OppositeColorIndex], targetSquare)) {
-                            if (board.GetPieceOnSquare(targetSquare) == (board.OppositeColor | Piece.King)) {
-                                SquaresInCheck.AddRange(squaresInCheck);
+                            if (targetSquare == board.KingSquare[board.OppositeColorIndex]) {
+                                for (int index = 0; index < squaresInCheckFound; index++) {
+                                    SquaresInCheck[SquaresInCheckFound] = squaresInCheck[index];
+                                    SquaresInCheckFound++;
+                                 }
                                 break;
                             } else {
                                 isPin = true;
@@ -163,23 +182,23 @@ namespace Chess {
 
         public void Print() {
             Console.WriteLine("All attacked squares: ");
-            foreach(int square in AttackedSquares) {
-                Console.Write($"{Board.SquareToSquareName(square)} ");
+            for (int squareIndex = 0; squareIndex < AttackedSquaresFound; squareIndex++) {
+                Console.Write($"{Board.SquareToSquareName(AttackedSquares[squareIndex])} ");
             }
             Console.WriteLine();
             Console.WriteLine("All squares in check: ");
-            foreach(int square in SquaresInCheck) {
-                Console.Write($"{Board.SquareToSquareName(square)} ");
+            for (int squareIndex = 0; squareIndex < SquaresInCheckFound; squareIndex++) {
+                Console.Write($"{Board.SquareToSquareName(SquaresInCheck[squareIndex])} ");
             }
             Console.WriteLine();
             Console.WriteLine("All squares in X pin: ");
-            foreach(int square in SquaresInPinX) {
-                Console.WriteLine($"{Board.SquareToSquareName(square)} ");
+            for (int squareIndex = 0; squareIndex < SquaresInPinXFound; squareIndex++) {
+                Console.Write($"{Board.SquareToSquareName(SquaresInPinX[squareIndex])} ");
             }
             Console.WriteLine();
             Console.WriteLine("All squares in Y pin: ");
-            foreach(int square in SquaresInPinY) {
-                Console.WriteLine($"{Board.SquareToSquareName(square)} ");
+            for (int squareIndex = 0; squareIndex < SquaresInPinYFound; squareIndex++) {
+                Console.Write($"{Board.SquareToSquareName(SquaresInPinY[squareIndex])} ");
             }
             Console.WriteLine();
         }

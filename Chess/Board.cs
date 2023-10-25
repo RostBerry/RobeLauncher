@@ -244,9 +244,11 @@ namespace Chess {
         }
 
         public void Print(bool isBitboard = false, ulong bitboard = 0) {
+            Console.WriteLine($"   {Config.DecorativeLettersRow}");
             if (Config.DoTerminalOutput) {
-                Console.WriteLine(Config.DecorativeRow);
+                Console.WriteLine($"   {Config.DecorativeRow}");
                 for (int y = 7; y >= 0; y--) {
+                    Console.Write($" {y + 1} ");
                     Console.Write("|");
                     for (int x = 0; x < 8; x++) {
                         int square = x + y * 8;
@@ -258,10 +260,10 @@ namespace Chess {
                         }
                         Console.Write($"  {pieceSym}  |");
                     }
-                    Console.WriteLine($" {y + 1}");
-                    Console.WriteLine(Config.DecorativeRow);
+                    Console.WriteLine($" {y + 1} ");
+                    Console.WriteLine($"   {Config.DecorativeRow}");
                 }
-                Console.WriteLine(Config.DecorativeLettersRow);
+                Console.WriteLine($"   {Config.DecorativeLettersRow}");
             }
 
         }

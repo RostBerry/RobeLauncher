@@ -157,7 +157,7 @@ namespace Chess {
 
             while (queensBitboard != 0) {
                 int startSquare = Bitboards.GetLS1BSquare(queensBitboard);
-                GenerateRayMovesForPiece(4, 8, startSquare);
+                GenerateRayMovesForPiece(0, 8, startSquare);
                 queensBitboard &= ~Bitboards.BitFromSquare(startSquare);
             }
         }

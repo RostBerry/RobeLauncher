@@ -74,15 +74,15 @@ namespace Chess {
 			}
 		}
 
-        public readonly bool IsPromotion {
+        public readonly int MoveFlag {
 			get {
-				return Flag.QueenPromotion >= MoveFlag && MoveFlag > Flag.KnightPromotion;
+				return value >> 12;
 			}
 		}
 
-		public readonly int MoveFlag {
+        public readonly bool IsPromotion {
 			get {
-				return value >> 12;
+				return Flag.QueenPromotion >= MoveFlag && MoveFlag > Flag.KnightPromotion;
 			}
 		}
 
