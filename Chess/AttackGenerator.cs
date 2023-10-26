@@ -80,9 +80,9 @@ namespace Chess {
         }
 
         private void GenerateAllRayAttacks() {
-            ulong bishopsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Bishop];
-            ulong rooksBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Rook];
-            ulong queensBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Queen];
+            ulong bishopsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Bishop - 1];
+            ulong rooksBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Rook - 1];
+            ulong queensBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Queen - 1];
 
             while (bishopsBitboard != 0) {
                 int startSquare = Bitboards.GetLS1BSquare(bishopsBitboard);
@@ -160,12 +160,12 @@ namespace Chess {
 
         private void GenerateAllKnightsAttacks() {
 
-            ulong knightsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Knight];
+            ulong knightsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Knight - 1];
 
             while (knightsBitboard != 0) {
                 int startSquare = Bitboards.GetLS1BSquare(knightsBitboard);
                 foreach (int targetSquare in PrecomputedSquareData.SquaresForKnight[startSquare]) {
-                    if (Bitboards.IsSquareOccupied(board.PiecesBitboards[board.OppositeColorIndex][Piece.King], targetSquare)) {
+                    if (Bitboards.IsSquareOccupied(board.PiecesBitboards[board.OppositeColorIndex][Piece.King - 1], targetSquare)) {
                         AddSquareInCheck(targetSquare);
                     }
                     AddAttackedSquare(targetSquare);

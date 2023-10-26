@@ -44,7 +44,7 @@ namespace Chess {
 
         private void GeneratePawnMoves() {
 
-            ulong pawnsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Pawn];
+            ulong pawnsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Pawn - 1];
 
             // Moves Forward
             ulong allMovesOneSquare = board.EmptySquaresBitboard & 
@@ -139,9 +139,9 @@ namespace Chess {
 
         private void GenerateAllRayMoves() {
 
-            ulong bishopsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Bishop];
-            ulong rooksBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Rook];
-            ulong queensBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Queen];
+            ulong bishopsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Bishop - 1];
+            ulong rooksBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Rook - 1];
+            ulong queensBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Queen - 1];
 
             while (bishopsBitboard != 0) {
                 int startSquare = Bitboards.GetLS1BSquare(bishopsBitboard);
@@ -181,7 +181,7 @@ namespace Chess {
 
         private void GenerateKnightMoves() {
 
-            ulong knightsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Knight];
+            ulong knightsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Knight - 1];
 
             while (knightsBitboard != 0) {
                 int startSquare = Bitboards.GetLS1BSquare(knightsBitboard);
