@@ -34,11 +34,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\User\\Documents\\RobeLauncher\\RobeLauncher\\Chess\\Chess.csproj",
+      "projectUniqueName": "C:\\Users\\User\\Documents\\RobeLauncher\\Chess\\Chess.csproj",
       "projectName": "Chess",
-      "projectPath": "C:\\Users\\User\\Documents\\RobeLauncher\\RobeLauncher\\Chess\\Chess.csproj",
+      "projectPath": "C:\\Users\\User\\Documents\\RobeLauncher\\Chess\\Chess.csproj",
       "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\User\\Documents\\RobeLauncher\\RobeLauncher\\Chess\\obj\\",
+      "outputPath": "C:\\Users\\User\\Documents\\RobeLauncher\\Chess\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
@@ -61,8 +61,8 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "C:\\Users\\User\\Documents\\RobeLauncher\\RobeLauncher\\Core\\Core.csproj": {
-              "projectPath": "C:\\Users\\User\\Documents\\RobeLauncher\\RobeLauncher\\Core\\Core.csproj"
+            "C:\\Users\\User\\Documents\\RobeLauncher\\Core\\Core.csproj": {
+              "projectPath": "C:\\Users\\User\\Documents\\RobeLauncher\\Core\\Core.csproj"
             }
           }
         }
@@ -92,7 +92,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.402\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
       }
     }
   }

@@ -1,4 +1,6 @@
-﻿using Core;
+﻿using System.ComponentModel;
+using System.Runtime.InteropServices;
+using Core;
 
 namespace Chess {
 
@@ -24,20 +26,16 @@ namespace Chess {
         public static readonly Dictionary<int, char> BinToPieceSym = 
             PieceSymToBin.ToDictionary(pair => pair.Value, pair => pair.Key);
 
-        public enum CastlingState {
-            BothSides,
-            ShortSide,
-            LongSide,
-            None
-        }
-        public readonly CastlingState[] CastlingStates = ClearCastlingStates(); // {white castling state, black castling state}
+        public CastlingState[] CastlingStates = new CastlingState[2]; // white, black
 
         public readonly int[] KingSquare = new int[2];
         public readonly ulong[] AllPiecesBitboard = new ulong[2]; //{all white pieces bitboard, all black pieces bitboard} 
-        public readonly ulong[][] PiecesBitboards = CreatePiecesBitboardsArray(); //{{piece, bitboard}, {piece, bitboard}}
+        public readonly ulong[,] PiecesBitboards = CreatePiecesBitboardsArray(); //{{piece, bitboard}, {piece, bitboard}}
+        public readonly ulong[] OrthogonalSliders = new ulong[2];
+        public readonly ulong[] DiagonalSliders = new ulong[2];
         public ulong EmptySquaresBitboard; // 0000000000000000111111111111111111111111111111110000000000000000 or smth like that
         public ulong AllOccupiedSquaresBitboard; //1111111111111111000000000000000000000000000000001111111111111111 or smth like that
-        public readonly ulong[] AllOccupiedSquaresExceptKing = new ulong[2];
+        public readonly int[] Squares = new int[64];
 
 
         public int CurrentColor = Piece.White;
@@ -45,41 +43,38 @@ namespace Chess {
         public int CurrentColorIndex = 0;
         public int OppositeColorIndex = 1;
         public bool IsWhite = true;
-
-        public GameState CurrentGameState = GameState.Running;
-
-        private static ulong[][] CreatePiecesBitboardsArray() {
-            ulong[][] bitboards = new ulong[2][];
+        private static ulong[,] CreatePiecesBitboardsArray() {
+            ulong[,] bitboards = new ulong[2,7]; // elem at index 0 is empty because of indexation issues
             for (int i = 0; i < 2; i++) {
-                bitboards[i] = new ulong[6];
-                Array.Fill<ulong>(bitboards[i], 0);
+                for(int j = 0; j < 7; j++) {
+                    bitboards[i, j] = 0ul;
+                }
             }
             return bitboards;
         }
 
-        private static CastlingState[] ClearCastlingStates() {
-            CastlingState[] states = new CastlingState[2];
-            for (int i = 0; i < 2; i++) {
-                Array.Fill<CastlingState>(states, CastlingState.BothSides);
-            }
-            return states;
-        }
-
         public Board()
         {
-            ClearSquares();       
+            Init();       
         }
 
 
-        private void ClearSquares() {
+        private void Init() {
 
             for (int index = 0; index < 2; index ++) {
                 
                 AllPiecesBitboard[index] = 0;
 
-                Array.Fill<ulong>(PiecesBitboards[index], 0);
+                OrthogonalSliders[index] = 0;
+                DiagonalSliders[index] = 0;
+
+                for(int j = 0; j < 7; j++) {
+                    PiecesBitboards[index, j] = 0ul;
+                }
 
                 KingSquare[index] = -1;
+
+                CastlingStates[index] = new CastlingState();
             }
             
             WriteEmptyAndOccupiedSquares();
@@ -88,13 +83,8 @@ namespace Chess {
         public void UpdateColors() {
             OppositeColor = Piece.GetOppositeColor(CurrentColor);
             IsWhite = CurrentColor == Piece.White;
-            if (IsWhite) {
-                CurrentColorIndex = 0;
-                OppositeColorIndex = 1;
-            } else {
-                CurrentColorIndex = 1;
-                OppositeColorIndex = 0;
-            }
+            CurrentColorIndex = IsWhite? 0: 1;
+            OppositeColorIndex = 1 - CurrentColorIndex;
         }
 
         public void SwitchColor() {
@@ -108,11 +98,26 @@ namespace Chess {
             int pieceType = Piece.GetType(piece);
             int colorIndex = pieceColor == Piece.White ? 0: 1;
 
-            AllPiecesBitboard[colorIndex] |= (ulong)1 << square;
-            PiecesBitboards[colorIndex][pieceType - 1] |= 1UL << square;
+            ulong bit = 1ul << square;
 
-            if (pieceType == Piece.King) {
-                KingSquare[colorIndex] = square;
+            AllPiecesBitboard[colorIndex] |= bit;
+            PiecesBitboards[colorIndex, pieceType] |= bit;
+            Squares[square] = piece;
+
+            switch(pieceType) {
+                case Piece.King:
+                    KingSquare[colorIndex] = square;
+                    break;
+                case Piece.Rook:
+                    OrthogonalSliders[colorIndex] |= bit;
+                    break;
+                case Piece.Bishop:
+                    DiagonalSliders[colorIndex] |= bit;
+                    break;
+                case Piece.Queen:
+                    OrthogonalSliders[colorIndex] |= bit;
+                    DiagonalSliders[colorIndex] |= bit;
+                    break;
             }
         }
 
@@ -121,24 +126,47 @@ namespace Chess {
             int pieceType = Piece.GetType(piece);
             int colorIndex = pieceColor == Piece.White ? 0: 1;
 
-            AllPiecesBitboard[colorIndex] &= ~(1UL << square);
-            PiecesBitboards[colorIndex][pieceType - 1] &= ~(1UL << square);
+            ulong bit = 1ul << square;
 
-            if (pieceType == Piece.King) {
-                KingSquare[colorIndex] = -1;
+            AllPiecesBitboard[colorIndex] &= ~bit;
+            PiecesBitboards[colorIndex, pieceType] &= ~bit;
+            Squares[square] = 0;
+
+            OrthogonalSliders[colorIndex] &= ~bit;
+            DiagonalSliders[colorIndex] &= ~bit;
+        }
+
+        private void DelPiece(int square) {
+            Squares[square] = Piece.None;
+        }
+
+        public void MakeMove(Move move) {
+            int startSquare = move.StartSquare;
+            int targetSquare = move.TargetSquare;
+            int flag = move.MoveFlag;
+            
+            int piece = Squares[startSquare];
+            int pieceColor = Piece.GetColor(piece);
+            int pieceType = Piece.GetType(piece);
+
+            DelPiece(piece, startSquare);
+
+            if (move.IsPromotion) {
+                piece = pieceColor | flag;
             }
+            CreatePiece(piece, targetSquare);
         }
 
         public ulong GetPieceBitboard(int piece) {
-            return PiecesBitboards[Piece.GetColorIndex(piece)][Piece.GetType(piece) - 1];
+            return PiecesBitboards[Piece.GetColorIndex(piece), Piece.GetType(piece)];
         }
 
         private int GetPieceOnSquare(int square) {
             ulong squareBit = Bitboards.BitFromSquare(square);
             for (int colorIndex = 0; colorIndex < 2; colorIndex++) {
-                for(int pieceIndex = 0; pieceIndex < 6; pieceIndex++) {
-                    if ((PiecesBitboards[colorIndex][pieceIndex] & squareBit) != 0) {
-                        return pieceIndex + 9 + 8 * colorIndex;
+                for(int pieceIndex = 1; pieceIndex < 7; pieceIndex++) {
+                    if ((PiecesBitboards[colorIndex, pieceIndex] & squareBit) != 0) {
+                        return pieceIndex + 8 * (colorIndex + 1);
                     }
                 }
             }
@@ -191,8 +219,8 @@ namespace Chess {
             UpdateColors();
 
             if (fen_list[2] == "-") {
-                CastlingStates[0] = CastlingState.None;
-                CastlingStates[1] = CastlingState.None;
+                CastlingStates[0] = new CastlingState(false, false);
+                CastlingStates[1] = new CastlingState(false, false);
                 return;
             }
 
@@ -201,11 +229,11 @@ namespace Chess {
                 bool shortSide = fen_list[2].Contains(i == 0 ? 'K': 'k');
                 bool longSide = fen_list[2].Contains(i == 0 ? 'Q': 'q');
                 if (shortSide && longSide) {
-                    CastlingStates[i] = CastlingState.BothSides;
+                    CastlingStates[i] = new CastlingState();
                 } else if (shortSide) {
-                    CastlingStates[i] = CastlingState.ShortSide;
+                    CastlingStates[i] = new CastlingState(true, false);
                 } else {
-                    CastlingStates[i] = CastlingState.LongSide;
+                    CastlingStates[i] = new CastlingState(false, true);
                 }
             }
 

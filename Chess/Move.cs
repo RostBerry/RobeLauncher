@@ -110,10 +110,26 @@ namespace Chess {
             }
         }
 
-        public readonly override string ToString()
-        {
-            string flagSym = 3 <= MoveFlag && MoveFlag <= 6 ? new string(Board.BinToPieceSym[MoveFlag], 1) : "";
+        public readonly override string ToString(){
+            string flagSym = 3 <= MoveFlag && MoveFlag <= 6 ? new string(Board.BinToPieceSym[MoveFlag | Piece.Black], 1) : "";
             return $"{Board.SquareToSquareName(StartSquare)}{Board.SquareToSquareName(TargetSquare)}{flagSym}";
+        }
+
+        public static Move FromUCI(string? uci) {
+            if (uci == null) {
+                return InvalidMove;
+            }
+            if (uci.Length >= 5) {
+                int startSquare = Board.SquareNameToSquare(uci[..2]);
+                int targetSquare = Board.SquareNameToSquare(uci[2..4]);
+                int flag = Flag.RegularMove;
+                if (uci.Length == 6) {
+                    flag = Board.PieceSymToBin[uci[4]];
+                }
+
+                return new Move(startSquare, targetSquare, flag);
+            }
+            return InvalidMove;
         }
     }
 }

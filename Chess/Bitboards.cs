@@ -1,19 +1,28 @@
+using System.Dynamic;
 using System.Numerics;
+using System.Reflection.Metadata;
 
 namespace Chess {
     public static class Bitboards {
         
-        public const ulong FirstRankMask   = 0xFF;
-        public const ulong SecondRankMask  = 0xFF00;
-        public const ulong ThirdRankMask   = 0xFF0000;
-        public const ulong FourthRankMask  = 0xFF000000;
-        public const ulong FifthRankMask   = 0xFF00000000;
-        public const ulong SixthRankMask   = 0xFF0000000000;
-        public const ulong SeventhRankMask = 0xFF000000000000;
+        public const ulong FirstRankMask   = 0x00000000000000FF;
+        public const ulong SecondRankMask  = 0x000000000000FF00;
+        public const ulong ThirdRankMask   = 0x0000000000FF0000;
+        public const ulong FourthRankMask  = 0x00000000FF000000;
+        public const ulong FifthRankMask   = 0x000000FF00000000;
+        public const ulong SixthRankMask   = 0x0000FF0000000000;
+        public const ulong SeventhRankMask = 0x00FF000000000000;
         public const ulong EighthRankMask  = 0xFF00000000000000;
 
         public const ulong NotFirstFileMask   = 0xFEFEFEFEFEFEFEFE;
         public const ulong NotEighthFileMask   = 0x7F7F7F7F7F7F7F7F;
+
+        public const ulong Board6x6 = 0x7E7E7E7E7E7E00;
+
+        public const ulong WhiteKingSideCastlingMask = 0x60;
+        public const ulong BlackKingSideCastlingMask = 0x6000000000000000;
+        public const ulong WhiteQueenSideCastlingMask = 0xE;
+        public const ulong BlackQueenSideCastlingMask = 0xE00000000000000;
 
         public const ulong FullBoardMask   = 0xFFFFFFFFFFFFFFFF;
 
@@ -36,6 +45,15 @@ namespace Chess {
 
         public static ulong BitFromSquare(int square) {
             return 1UL << square;
+        }
+
+        public static ulong Shift(ulong bitboard, int squares) {
+            if (squares > 0) {
+                bitboard <<= squares;
+            } else {
+                bitboard >>= -squares;
+            }
+            return bitboard;
         }
 
         public static ulong GetNorthOffset(ulong bitboard, int numSquares) {
@@ -85,6 +103,13 @@ namespace Chess {
             };
         }
 
-
+        public static int GetBitsCount(ulong bitboard) {
+            int count = 0;
+            while (bitboard != 0) {
+                count++;
+                bitboard &= ~GetLS1BBit(bitboard);
+            }
+            return count;
+        }
     }
 }

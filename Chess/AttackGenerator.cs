@@ -1,24 +1,19 @@
 
+
 namespace Chess {
     public class AttackGenerator {
         
         private readonly Board board;
 
-        private const int MaxSquaresInPinPerPos = 20;
-        private const int MaxAttackedSquaresPerPos = 332;
-        private const int MaxSquaresInCheckPerPos = 14;
-        private const int MaxAttackedSquaresPerPiece = 28;
-        private const int MaxPinLength = 8;
-        private const int MaxCheckRayLength = 7;
+        public ulong AttackedSquares = 0;
 
-        private readonly int[] AttackedSquares = new int[MaxAttackedSquaresPerPos];
-        private int AttackedSquaresFound = 0;
-        private readonly int[] SquaresInCheck = new int[MaxSquaresInCheckPerPos];
-        private int SquaresInCheckFound = 0;
-        private readonly int[] SquaresInPinX = new int[MaxSquaresInPinPerPos];
-        private int SquaresInPinXFound = 0;
-        private readonly int[] SquaresInPinY = new int[MaxSquaresInPinPerPos];
-        private int SquaresInPinYFound = 0;
+        public ulong SquaresToBlockCheck = 0;
+
+        private ulong SquaresInPinX = 0;
+        private ulong SquaresInPinY = 0;
+
+        public bool isInCheck = false;
+        public bool isInDoubleCheck = false;
 
         public AttackGenerator(Board board) {
             this.board = board;
@@ -27,180 +22,139 @@ namespace Chess {
         }
 
         private void AddAttackedSquare(int square) {
-            AttackedSquares[AttackedSquaresFound] = square;
-            AttackedSquaresFound++;
+            AttackedSquares |= Bitboards.BitFromSquare(square);
         }
 
-        private void AddSquareInCheck(int square) {
-            SquaresInCheck[SquaresInCheckFound] = square;
-            SquaresInCheckFound++;
+        private void AddAttackedSquare(ulong bit) {
+            AttackedSquares |= bit;
         }
 
-        private void AddSquareInPinX(int square) {
-            SquaresInPinX[SquaresInPinXFound] = square;
-            SquaresInPinXFound++;
+        private void AddSquareToBlockCheck(int square) {
+            SquaresToBlockCheck |= Bitboards.BitFromSquare(square);
         }
 
-        private void AddSquareInPinY(int square) {
-            SquaresInPinY[SquaresInPinYFound] = square;
-            SquaresInPinYFound++;
+        private void AddSquareToBlockCheck(ulong bit) {
+            SquaresToBlockCheck |= bit;
         }
 
         private void GenerateAllAttacks() {
-
+            
+            GenerateAllKingsAttacks();
             GenerateAllPawnAttacks();
             GenerateAllRayAttacks();
             GenerateAllKnightsAttacks();
-            GenerateAllKingsAttacks();
+        }
+
+        private void GenerateAllKingsAttacks() {
+            AddAttackedSquare(PrecomputedSquareData.SquaresForKing[board.KingSquare[board.CurrentColorIndex]]);
         }
 
         private void GenerateAllPawnAttacks() {
             
-            ulong pawnsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Pawn];
+            ulong pawnsBitboard = board.PiecesBitboards[board.CurrentColorIndex, Piece.Pawn];
 
-            ulong clampedBitboardWithFirstFile = pawnsBitboard & Bitboards.NotFirstFileMask;
-            ulong clampedBitboardWithEighthFile = pawnsBitboard & Bitboards.NotEighthFileMask;
+            if (pawnsBitboard == 0) {
+                return; // if there is no pawns, we can avoid calculating that garbage
+            }
+            int perspective = board.IsWhite? 1: -1;
 
-            ulong allCapturesLeft = board.IsWhite ? 
-                    Bitboards.GetNorthWestOffset(clampedBitboardWithFirstFile, 1):
-                    Bitboards.GetSouthEastOffset(clampedBitboardWithEighthFile, 1);
+            ulong capture1ClampMask;
+            ulong capture2ClampMask;
 
-            ulong allCapturesRight = board.IsWhite ? 
-                    Bitboards.GetNorthEastOffset(clampedBitboardWithEighthFile, 1):
-                    Bitboards.GetSouthWestOffset(clampedBitboardWithFirstFile, 1);
+            if (board.IsWhite) {
+                capture1ClampMask = Bitboards.NotFirstFileMask;
+                capture2ClampMask = Bitboards.NotEighthFileMask;
+            } else {
+                capture1ClampMask = Bitboards.NotEighthFileMask;
+                capture2ClampMask = Bitboards.NotFirstFileMask;
+            }
 
-            ulong allPawnsAttacksBitboard = allCapturesLeft | allCapturesRight;
+            int squaresToCapture1 = 7 * perspective;
+            int squaresToCapture2 = 9 * perspective;
 
-            while(allPawnsAttacksBitboard != 0) {
-                int attackedSquare = Bitboards.GetLS1BSquare(allPawnsAttacksBitboard);
-                ulong attackedBit = 1UL << attackedSquare;
-                AddAttackedSquare(attackedSquare);
-                allPawnsAttacksBitboard &= ~attackedBit;
+            ulong capture1 = Bitboards.Shift(pawnsBitboard & capture1ClampMask, squaresToCapture1);
+            ulong capture2 = Bitboards.Shift(pawnsBitboard & capture2ClampMask, squaresToCapture2);
+
+            AddAttackedSquare(capture1);
+            AddAttackedSquare(capture2);
+
+            ulong pawnChecks1 = Bitboards.Shift(capture1 & board.PiecesBitboards[board.OppositeColorIndex, Piece.King], -squaresToCapture1);
+            ulong allPawnChecks = Bitboards.Shift(capture2 & board.PiecesBitboards[board.OppositeColorIndex, Piece.King], -squaresToCapture2) | pawnChecks1;
+
+            if (allPawnChecks != 0) {
+                isInCheck = true;
+                AddSquareToBlockCheck(allPawnChecks);
             }
         }
 
         private void GenerateAllRayAttacks() {
-            ulong bishopsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Bishop - 1];
-            ulong rooksBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Rook - 1];
-            ulong queensBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Queen - 1];
-
-            while (bishopsBitboard != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(bishopsBitboard);
-                GenerateRayAttacksForPiece(4, 8, startSquare);
-                bishopsBitboard &= ~Bitboards.BitFromSquare(startSquare);
-            }
-
-            while (rooksBitboard != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(rooksBitboard);
-                GenerateRayAttacksForPiece(0, 4, startSquare);
-                rooksBitboard &= ~Bitboards.BitFromSquare(startSquare);
-            }
-
-            while (queensBitboard != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(queensBitboard);
-                GenerateRayAttacksForPiece(0, 8, startSquare);
-                queensBitboard &= ~Bitboards.BitFromSquare(startSquare);
-            }
+            GenerateRayPieceAttacks(board.OrthogonalSliders[board.CurrentColorIndex], false);
+            GenerateRayPieceAttacks(board.DiagonalSliders[board.CurrentColorIndex], true);
         }
 
-        private void GenerateRayAttacksForPiece(int startIndex, int endIndex, int startSquare) {
-            for (int dirIndex = startIndex; dirIndex < endIndex; dirIndex++) {
+        private void GenerateRayPieceAttacks(ulong pieceBitboard, bool isBishop) {
+            while (pieceBitboard != 0) {
+                int startSquare = Bitboards.GetLS1BSquare(pieceBitboard);
+                pieceBitboard &= ~Bitboards.BitFromSquare(startSquare);
 
-                bool isPin = false;
-                int[] squaresInPin = new int[MaxPinLength];
-                squaresInPin[0] = startSquare;
-                int squaresInPinFound = 1;
+                ulong legalMovesBB = MagicBitboardsData.GetRayPieceLegalMoves(startSquare, board.AllOccupiedSquaresBitboard, isBishop);
 
-                int[] squaresInCheck = new int[MaxCheckRayLength];
-                int squaresInCheckFound = 0;
+                AddAttackedSquare(legalMovesBB);
+                if (isInDoubleCheck) {
+                    continue;
+                }
 
-                for (int n = 0; n < PrecomputedSquareData.SquaresToEdge[startSquare][dirIndex]; n++) {
-                    int targetSquare = startSquare + PrecomputedSquareData.MovingOffsets[dirIndex] * (n + 1);
-                    squaresInPin[squaresInPinFound] = targetSquare;
-                    squaresInPinFound++;
-                    if (isPin) {
-                        if (targetSquare == board.KingSquare[board.OppositeColorIndex]) {
-                            if (dirIndex <2 || dirIndex >= 4) {
-                                for (int index = 0; index < squaresInPinFound; index++) {
-                                    SquaresInPinX[SquaresInPinXFound] = squaresInPin[index];
-                                    SquaresInPinXFound++;
-                                }
-                            }
-                            if (dirIndex >=2) {
-                                for (int index = 0; index < squaresInPinFound; index++) {
-                                    SquaresInPinY[SquaresInPinYFound] = squaresInPin[index];
-                                    SquaresInPinYFound++;
-                                }
-                            }
-                            break;
-                        }
-                    } else {
-                        AddAttackedSquare(targetSquare);
-                        squaresInCheck[squaresInCheckFound] = targetSquare;
-                        squaresInCheckFound++;
-                        if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.CurrentColorIndex], targetSquare)) {
-                            break;
-                        }
-                        if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.OppositeColorIndex], targetSquare)) {
-                            if (targetSquare == board.KingSquare[board.OppositeColorIndex]) {
-                                for (int index = 0; index < squaresInCheckFound; index++) {
-                                    SquaresInCheck[SquaresInCheckFound] = squaresInCheck[index];
-                                    SquaresInCheckFound++;
-                                 }
-                                break;
-                            } else {
-                                isPin = true;
-                            }
-                        }
-                    }
-
+                if ((legalMovesBB & board.PiecesBitboards[board.OppositeColorIndex, Piece.King]) != 0) {
+                    AddSquareToBlockCheck(PrecomputedSquareData.LinesFromSquareToSquareBB[startSquare, 
+                                            board.KingSquare[board.OppositeColorIndex]] & 
+                                            ~board.PiecesBitboards[board.OppositeColorIndex, Piece.King]);
+                    isInDoubleCheck = isInCheck;
+                    isInCheck = true;
                 }
             }
         }
 
         private void GenerateAllKnightsAttacks() {
 
-            ulong knightsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Knight - 1];
+            ulong knightsBitboard = board.PiecesBitboards[board.CurrentColorIndex, Piece.Knight];
 
             while (knightsBitboard != 0) {
                 int startSquare = Bitboards.GetLS1BSquare(knightsBitboard);
-                foreach (int targetSquare in PrecomputedSquareData.SquaresForKnight[startSquare]) {
-                    if (Bitboards.IsSquareOccupied(board.PiecesBitboards[board.OppositeColorIndex][Piece.King - 1], targetSquare)) {
-                        AddSquareInCheck(targetSquare);
-                    }
-                    AddAttackedSquare(targetSquare);
-                }
-                knightsBitboard &= ~Bitboards.BitFromSquare(startSquare);
-            }
-        }
+                ulong startBit = Bitboards.BitFromSquare(startSquare);
+                knightsBitboard &= ~startBit;
 
-        private void GenerateAllKingsAttacks() {
-            foreach(int targetSquare in PrecomputedSquareData.SquaresForKing[board.KingSquare[board.CurrentColorIndex]]) {
-                AddAttackedSquare(targetSquare);
+                ulong possibleAttacks = PrecomputedSquareData.SquaresForKnight[startSquare];
+                
+                AddAttackedSquare(possibleAttacks);
+
+                if(isInDoubleCheck) {
+                    continue;
+                }
+
+                if ((possibleAttacks & board.PiecesBitboards[board.OppositeColorIndex, Piece.King]) != 0) {
+                    AddSquareToBlockCheck(startBit);
+                    isInDoubleCheck = isInCheck;
+                    isInCheck = true;
+                }
             }
         }
 
         public void Print() {
             Console.WriteLine("All attacked squares: ");
-            for (int squareIndex = 0; squareIndex < AttackedSquaresFound; squareIndex++) {
-                Console.Write($"{Board.SquareToSquareName(AttackedSquares[squareIndex])} ");
-            }
-            Console.WriteLine();
+            board.Print(true, AttackedSquares);
+            Console.WriteLine($"({Bitboards.GetBitsCount(AttackedSquares)} squares)");
+
             Console.WriteLine("All squares in check: ");
-            for (int squareIndex = 0; squareIndex < SquaresInCheckFound; squareIndex++) {
-                Console.Write($"{Board.SquareToSquareName(SquaresInCheck[squareIndex])} ");
-            }
-            Console.WriteLine();
+            board.Print(true, SquaresToBlockCheck);
+            Console.WriteLine($"({Bitboards.GetBitsCount(SquaresToBlockCheck)} squares)");
+
             Console.WriteLine("All squares in X pin: ");
-            for (int squareIndex = 0; squareIndex < SquaresInPinXFound; squareIndex++) {
-                Console.Write($"{Board.SquareToSquareName(SquaresInPinX[squareIndex])} ");
-            }
-            Console.WriteLine();
+            board.Print(true, SquaresInPinX);
+            Console.WriteLine($"({Bitboards.GetBitsCount(SquaresInPinX)} squares)");
+
             Console.WriteLine("All squares in Y pin: ");
-            for (int squareIndex = 0; squareIndex < SquaresInPinYFound; squareIndex++) {
-                Console.Write($"{Board.SquareToSquareName(SquaresInPinY[squareIndex])} ");
-            }
-            Console.WriteLine();
+            board.Print(true, SquaresInPinY);
+            Console.WriteLine($"({Bitboards.GetBitsCount(SquaresInPinY)} squares)");
         }
     }
 }

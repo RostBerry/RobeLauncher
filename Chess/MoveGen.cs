@@ -3,176 +3,222 @@ namespace Chess {
 
         private readonly Board board;
         private readonly AttackGenerator attackedSquaresGen;
-        private readonly bool doSearchLegalMoves;
+        private readonly bool doAllPromotions;
         private const int MaxMovesPerPos = 218;
         private readonly Move[] AllMoves = new Move[MaxMovesPerPos];
         private int movesFound;
 
-        public MoveGen(Board board, AttackGenerator attackedSquaresGenerator, bool doSearchLegalMoves) {
+        public MoveGen(Board board, AttackGenerator attackedSquaresGenerator, bool doAllPromotions = false) {
             this.board = board;
             attackedSquaresGen = attackedSquaresGenerator;
-            this.doSearchLegalMoves = doSearchLegalMoves;
+            this.doAllPromotions = doAllPromotions;
             movesFound = 0;
 
             GenerateMoves();
         }
 
         private void AddMove(Move move) {
-            AllMoves[movesFound] = move;
-            movesFound++;
+            AllMoves[movesFound++] = move;
         }
 
         public void PrintAllMoves() {
             for(int moveIndex = 0; moveIndex < movesFound; moveIndex++) {
                 Console.Write($"{AllMoves[moveIndex]} ");
             }
+            Console.WriteLine($"({movesFound} moves)");
         }
 
         private void GenerateMoves() {
-            GeneratePseudoLegalMoves();
-        }
-
-
-        private void GeneratePseudoLegalMoves() {
-            
+            GenerateKingMoves();
             GeneratePawnMoves();
             GenerateAllRayMoves();
             GenerateKnightMoves();
-            GenerateKingMoves();
+        }
+
+        private void GenerateKingMoves() {
+            int startSquare = board.KingSquare[board.CurrentColorIndex];
+            ulong possibleMoves = PrecomputedSquareData.SquaresForKing[startSquare] & ~(board.AllPiecesBitboard[board.CurrentColorIndex]);
+            while (possibleMoves != 0) {
+                int targetSquare = Bitboards.GetLS1BSquare(possibleMoves);
+                possibleMoves &= ~Bitboards.BitFromSquare(targetSquare);
+
+                AddMove(new Move(startSquare, targetSquare));
+            }
+
+            ulong castlingBlockers = board.AllOccupiedSquaresBitboard;
+
+            if (board.CastlingStates[board.CurrentColorIndex].CanCastleKingSide) {
+                ulong kingSideCastlingMask = board.IsWhite? Bitboards.WhiteKingSideCastlingMask: Bitboards.BlackKingSideCastlingMask;
+                if ((kingSideCastlingMask & castlingBlockers) == 0) {
+                    AddMove(new Move(startSquare, startSquare + 2, Move.Flag.Castling));
+                }
+            }
+
+            if (board.CastlingStates[board.CurrentColorIndex].CanCastleQueenSide) {
+                ulong queenSideCastlingMask = board.IsWhite? Bitboards.WhiteQueenSideCastlingMask: Bitboards.BlackQueenSideCastlingMask;
+                if ((queenSideCastlingMask & castlingBlockers) == 0) {
+                    AddMove (new Move(startSquare, startSquare - 2, Move.Flag.Castling));
+                }
+            }
         }
 
 
         private void GeneratePawnMoves() {
 
-            ulong pawnsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Pawn - 1];
+            ulong pawnsBitboard = board.PiecesBitboards[board.CurrentColorIndex, Piece.Pawn];
+
+            if (pawnsBitboard == 0) {
+                return; // if there is no pawns, we can avoid calculating that garbage
+            }
+            int perspective = board.IsWhite? 1: -1;
+
+            ulong promotionRank = board.IsWhite? Bitboards.EighthRankMask: Bitboards.FirstRankMask;
 
             // Moves Forward
-            ulong allMovesOneSquare = board.EmptySquaresBitboard & 
-                (board.IsWhite ? 
-                    Bitboards.GetNorthOffset(pawnsBitboard, 1): 
-                    Bitboards.GetSouthOffset(pawnsBitboard, 1));
-            ulong allPawnsToMoveOneSquare = 
-                board.IsWhite ? 
-                    Bitboards.GetSouthOffset(allMovesOneSquare, 1): 
-                    Bitboards.GetNorthOffset(allMovesOneSquare, 1);
+            int squaresToMove = perspective * 8;
+            ulong pushOneSquare = Bitboards.Shift(pawnsBitboard, squaresToMove) & board.EmptySquaresBitboard;
 
-            ulong allPawnsOnSecondRankToMoveOneSquare = allPawnsToMoveOneSquare & 
-                (board.IsWhite ? Bitboards.SecondRankMask: Bitboards.SeventhRankMask);
+            ulong pushPromotions = pushOneSquare & promotionRank;
 
-            while (allPawnsToMoveOneSquare != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(allPawnsToMoveOneSquare);
-                ulong startBit = 1UL << startSquare;
-                int targetSquare = Bitboards.GetLS1BSquare(allMovesOneSquare);
-                ulong targetBit = 1UL << targetSquare;
-                
+            ulong pushNoPromotions = pushOneSquare & ~promotionRank;
+
+            while (pushNoPromotions != 0) {
+                int targetSquare = Bitboards.GetLS1BSquare(pushNoPromotions);
+                pushNoPromotions &= ~Bitboards.BitFromSquare(targetSquare);
+
+                int startSquare = targetSquare - squaresToMove;
+
                 AddMove(new Move(startSquare, targetSquare));
-
-                if (allPawnsOnSecondRankToMoveOneSquare != 0) {
-                    int twoSquaresTargetSquare = 
-                        board.IsWhite ?
-                            startSquare + 16:
-                            startSquare - 16;
-                    ulong twoSquaresTargetBit = 1UL << twoSquaresTargetSquare;
-
-                    if((twoSquaresTargetBit & board.EmptySquaresBitboard) != 0) {
-                        AddMove(new Move(startSquare, twoSquaresTargetSquare));
-                    } 
-
-                    allPawnsOnSecondRankToMoveOneSquare &= ~startBit;
-                }
-
-                allPawnsToMoveOneSquare &= ~startBit;
-                allMovesOneSquare &= ~targetBit;
             }
-            ////
-            
+
+            ulong pushTwoSquaresTargetRank = board.IsWhite? Bitboards.FourthRankMask: Bitboards.FifthRankMask;
+
+            ulong pushTwoSquares = Bitboards.Shift(pushOneSquare, squaresToMove) & board.EmptySquaresBitboard & pushTwoSquaresTargetRank;
+
+            while (pushTwoSquares != 0) {
+                int targetSquare = Bitboards.GetLS1BSquare(pushTwoSquares);
+                pushTwoSquares &= ~Bitboards.BitFromSquare(targetSquare);
+
+                int startSquare = targetSquare - squaresToMove * 2;
+
+                AddMove(new Move(startSquare, targetSquare));
+            }
+
+
             // Captures
-            ////Left
-            ulong allCapturesLeft = board.EmptySquaresBitboard & 
-                (board.IsWhite ? 
-                    Bitboards.GetNorthWestOffset(pawnsBitboard & Bitboards.NotFirstFileMask, 1):
-                    Bitboards.GetSouthEastOffset(pawnsBitboard & Bitboards.NotEighthFileMask, 1));
+            ulong capture1ClampMask;
+            ulong capture2ClampMask;
 
-            ulong allPawnsToCaptureLeft = board.EmptySquaresBitboard & 
-                (board.IsWhite ?
-                    Bitboards.GetSouthEastOffset(allCapturesLeft, 1):
-                    Bitboards.GetNorthWestOffset(allCapturesLeft, 1));
-
-            while (allPawnsToCaptureLeft != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(allPawnsToCaptureLeft);
-                int targetSquare = Bitboards.GetLS1BSquare(allCapturesLeft);
-
-                ulong startBit = 1UL << startSquare;
-                ulong targetBit = 1UL << targetSquare;
-
-                AddMove(new Move(startSquare, targetSquare));
-
-                allPawnsToCaptureLeft &= ~startBit;
-                allCapturesLeft &= ~targetBit;
+            if (board.IsWhite) {
+                capture1ClampMask = Bitboards.NotFirstFileMask;
+                capture2ClampMask = Bitboards.NotEighthFileMask;
+            } else {
+                capture1ClampMask = Bitboards.NotEighthFileMask;
+                capture2ClampMask = Bitboards.NotFirstFileMask;
             }
 
-            ////Right
-            ulong allCapturesRight = board.EmptySquaresBitboard &
-                (board.IsWhite ? 
-                    Bitboards.GetNorthEastOffset(pawnsBitboard & Bitboards.NotEighthFileMask, 1):
-                    Bitboards.GetSouthWestOffset(pawnsBitboard & Bitboards.NotFirstFileMask, 1));
+            int squaresToCapture1 = 7 * perspective;
+            int squaresToCapture2 = 9 * perspective;
 
-            ulong allPawnsToCaptureRight = board.EmptySquaresBitboard &
-                (board.IsWhite ? 
-                    Bitboards.GetSouthWestOffset(allCapturesRight, 1):
-                    Bitboards.GetNorthEastOffset(allCapturesRight, 1));
+            ulong capture1 = Bitboards.Shift(pawnsBitboard & capture1ClampMask, squaresToCapture1) & board.AllPiecesBitboard[board.OppositeColorIndex];
+            ulong capture2 = Bitboards.Shift(pawnsBitboard & capture2ClampMask, squaresToCapture2) & board.AllPiecesBitboard[board.OppositeColorIndex];
 
-            while (allPawnsToCaptureRight != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(allPawnsToCaptureRight);
-                int targetSquare = Bitboards.GetLS1BSquare(allPawnsToCaptureRight);
+            ulong capture1Promotions = capture1 & promotionRank;
+            ulong capture2Promotions = capture2 & promotionRank;
 
-                ulong startBit = 1UL << startSquare;
-                ulong targetBit = 1UL << targetSquare;
+            capture1 &= ~promotionRank;
+            capture2 &= ~promotionRank;
+
+            while (capture1 != 0) {
+                int targetSquare = Bitboards.GetLS1BSquare(capture1);
+                capture1 &= ~Bitboards.BitFromSquare(targetSquare);
+
+                int startSquare = targetSquare - squaresToCapture1;
 
                 AddMove(new Move(startSquare, targetSquare));
-
-                allPawnsToCaptureRight &= ~startBit;
-                allCapturesRight &= ~targetBit;
             }
-            ////
+
+            while (capture2 != 0) {
+                int targetSquare = Bitboards.GetLS1BSquare(capture2);
+                capture1 &= ~Bitboards.BitFromSquare(targetSquare);
+
+                int startSquare = targetSquare - squaresToCapture2;
+
+                AddMove(new Move(startSquare, targetSquare));
+            }
+
+            // Promotions
+
+            while (pushPromotions != 0) {
+                int targetSquare = Bitboards.GetLS1BSquare(pushPromotions);
+                pushPromotions &= ~Bitboards.BitFromSquare(targetSquare);
+                int startSquare = targetSquare - squaresToMove;
+
+                GeneratePromotions(startSquare, targetSquare);
+            }
+
+            while (capture1Promotions != 0) {
+                int targetSquare = Bitboards.GetLS1BSquare(capture1Promotions);
+                capture1Promotions &= ~Bitboards.BitFromSquare(targetSquare);
+
+                int startSquare = targetSquare - squaresToCapture1;
+
+                GeneratePromotions(startSquare, targetSquare);
+            }
+
+            while (capture2Promotions != 0) {
+                int targetSquare = Bitboards.GetLS1BSquare(capture2Promotions);
+                capture2Promotions &= ~Bitboards.BitFromSquare(targetSquare);
+
+                int startSquare = targetSquare - squaresToCapture2;
+
+                GeneratePromotions(startSquare, targetSquare);
+            }
+        }
+
+        private void GeneratePromotions(int startSquare, int targetSquare) {
+            AddMove(new Move(startSquare, targetSquare, Move.Flag.QueenPromotion));
+            AddMove(new Move(startSquare, targetSquare, Move.Flag.KnightPromotion));
+
+            if (doAllPromotions) {
+                AddMove(new Move(startSquare, targetSquare, Move.Flag.KnightPromotion));
+                AddMove(new Move(startSquare, targetSquare, Move.Flag.RookPromotion));
+                AddMove(new Move( startSquare, targetSquare, Move.Flag.BishopPromotion));
+            }
         }
 
         private void GenerateAllRayMoves() {
 
-            ulong bishopsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Bishop - 1];
-            ulong rooksBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Rook - 1];
-            ulong queensBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Queen - 1];
+            ulong orthogonalSliders = board.OrthogonalSliders[board.CurrentColorIndex];
+            ulong diagonalSliders = board.DiagonalSliders[board.CurrentColorIndex];
 
-            while (bishopsBitboard != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(bishopsBitboard);
-                GenerateRayMovesForPiece(4, 8, startSquare);
-                bishopsBitboard &= ~Bitboards.BitFromSquare(startSquare);
+            while (orthogonalSliders != 0) {
+                int startSquare = Bitboards.GetLS1BSquare(orthogonalSliders);
+                ulong startBit = Bitboards.BitFromSquare(startSquare);
+                orthogonalSliders &= ~startBit;
+
+                ulong legalMovesBB = MagicBitboardsData.GetRookLegalMoves(startSquare, board.AllOccupiedSquaresBitboard) & ~board.AllPiecesBitboard[board.CurrentColorIndex];
+
+                while (legalMovesBB != 0) {
+                    int targetSquare = Bitboards.GetLS1BSquare(legalMovesBB);
+                    ulong targetBit = Bitboards.BitFromSquare(targetSquare);
+                    legalMovesBB &= ~targetBit;
+
+                    AddMove(new Move(startSquare, targetSquare));
+                }
             }
 
-            while (rooksBitboard != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(rooksBitboard);
-                GenerateRayMovesForPiece(0, 4, startSquare);
-                rooksBitboard &= ~Bitboards.BitFromSquare(startSquare);
-            }
+            while (diagonalSliders != 0) {
+                int startSquare = Bitboards.GetLS1BSquare(diagonalSliders);
+                ulong startBit = Bitboards.BitFromSquare(startSquare);
+                diagonalSliders &= ~startBit;
 
-            while (queensBitboard != 0) {
-                int startSquare = Bitboards.GetLS1BSquare(queensBitboard);
-                GenerateRayMovesForPiece(0, 8, startSquare);
-                queensBitboard &= ~Bitboards.BitFromSquare(startSquare);
-            }
-        }
+                ulong legalMovesBB = MagicBitboardsData.GetBishopLegalMoves(startSquare, board.AllOccupiedSquaresBitboard) & ~board.AllPiecesBitboard[board.CurrentColorIndex];
 
-        private void GenerateRayMovesForPiece(int startIndex, int endIndex, int startSquare) {
-            for (int dirIndex = startIndex; dirIndex < endIndex; dirIndex++) {
-                for (int n = 0; n < PrecomputedSquareData.SquaresToEdge[startSquare][dirIndex]; n++) {
-                    int targetSquare = startSquare + PrecomputedSquareData.MovingOffsets[dirIndex] * (n + 1);
-                    if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.CurrentColorIndex], targetSquare)) {
-                        break;
-                    }
-                    if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.OppositeColorIndex], targetSquare)) {
-                        AddMove(new Move(startSquare, targetSquare));
-                        break;
-                    }
+                while (legalMovesBB != 0) {
+                    int targetSquare = Bitboards.GetLS1BSquare(legalMovesBB);
+                    ulong targetBit = Bitboards.BitFromSquare(targetSquare);
+                    legalMovesBB &= ~targetBit;
 
                     AddMove(new Move(startSquare, targetSquare));
                 }
@@ -181,16 +227,15 @@ namespace Chess {
 
         private void GenerateKnightMoves() {
 
-            ulong knightsBitboard = board.PiecesBitboards[board.CurrentColorIndex][Piece.Knight - 1];
+            ulong knightsBitboard = board.PiecesBitboards[board.CurrentColorIndex, Piece.Knight];
 
             while (knightsBitboard != 0) {
                 int startSquare = Bitboards.GetLS1BSquare(knightsBitboard);
-                foreach(int targetSquare in PrecomputedSquareData.SquaresForKnight[startSquare]) {
+                ulong possibleMoves = PrecomputedSquareData.SquaresForKnight[startSquare];
+                while(possibleMoves != 0) {
+                    int targetSquare = Bitboards.GetLS1BSquare(possibleMoves);
+                    possibleMoves &= ~Bitboards.BitFromSquare(targetSquare);
                     if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.CurrentColorIndex], targetSquare)) {
-                        continue;
-                    }
-                    if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.OppositeColorIndex], targetSquare)) {
-                        AddMove(new Move(startSquare, targetSquare));
                         continue;
                     }
                     AddMove(new Move(startSquare, targetSquare));
@@ -198,20 +243,6 @@ namespace Chess {
                 knightsBitboard &= ~Bitboards.BitFromSquare(startSquare);
             }
             
-        }
-
-        private void GenerateKingMoves() {
-            foreach(int targetSquare in PrecomputedSquareData.SquaresForKing[board.KingSquare[board.CurrentColorIndex]]) {
-                if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.CurrentColorIndex], targetSquare)) {
-                    continue;
-                }
-                if (Bitboards.IsSquareOccupied(board.AllPiecesBitboard[board.OppositeColorIndex], targetSquare)) {
-                    AddMove(new Move(board.KingSquare[board.CurrentColorIndex], targetSquare));
-                    continue;
-                }
-
-                AddMove(new Move(board.KingSquare[board.CurrentColorIndex], targetSquare));
-            }
         }
     }
 }
