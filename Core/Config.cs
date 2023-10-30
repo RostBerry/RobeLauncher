@@ -17,7 +17,7 @@
 
         public const string DefaultFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         public const string PerftFen = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
-        public const string MateIn2Fen = "kbK5/pp6/1P6/8/8/8/8/R7 b - -";
+        public const string MateIn2Fen = "kbK5/pp6/1P6/8/8/8/8/R7 w - -";
 
         public static int ChessSquareSize {
             get {return _chessSquareSize;}

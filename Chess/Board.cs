@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Runtime.InteropServices;
+﻿using System.IO.Pipes;
 using Core;
 
 namespace Chess {
@@ -102,6 +101,8 @@ namespace Chess {
 
             AllPiecesBitboard[colorIndex] |= bit;
             PiecesBitboards[colorIndex, pieceType] |= bit;
+            AllOccupiedSquaresBitboard |= bit;
+            EmptySquaresBitboard = ~AllOccupiedSquaresBitboard;
             Squares[square] = piece;
 
             switch(pieceType) {
@@ -130,14 +131,16 @@ namespace Chess {
 
             AllPiecesBitboard[colorIndex] &= ~bit;
             PiecesBitboards[colorIndex, pieceType] &= ~bit;
-            Squares[square] = 0;
+            AllOccupiedSquaresBitboard &= ~bit;
+            EmptySquaresBitboard = ~AllOccupiedSquaresBitboard;
+            Squares[square] = Piece.None;
 
             OrthogonalSliders[colorIndex] &= ~bit;
             DiagonalSliders[colorIndex] &= ~bit;
-        }
 
-        private void DelPiece(int square) {
-            Squares[square] = Piece.None;
+            if (pieceType == Piece.King) {
+                KingSquare[colorIndex] = -1;
+            }
         }
 
         public void MakeMove(Move move) {
@@ -145,11 +148,12 @@ namespace Chess {
             int targetSquare = move.TargetSquare;
             int flag = move.MoveFlag;
             
-            int piece = Squares[startSquare];
+            int piece = GetPieceOnSquare(startSquare);
             int pieceColor = Piece.GetColor(piece);
             int pieceType = Piece.GetType(piece);
 
             DelPiece(piece, startSquare);
+            DelPiece(GetPieceOnSquare(targetSquare), targetSquare);
 
             if (move.IsPromotion) {
                 piece = pieceColor | flag;
@@ -161,16 +165,8 @@ namespace Chess {
             return PiecesBitboards[Piece.GetColorIndex(piece), Piece.GetType(piece)];
         }
 
-        private int GetPieceOnSquare(int square) {
-            ulong squareBit = Bitboards.BitFromSquare(square);
-            for (int colorIndex = 0; colorIndex < 2; colorIndex++) {
-                for(int pieceIndex = 1; pieceIndex < 7; pieceIndex++) {
-                    if ((PiecesBitboards[colorIndex, pieceIndex] & squareBit) != 0) {
-                        return pieceIndex + 8 * (colorIndex + 1);
-                    }
-                }
-            }
-            return -1;
+        public int GetPieceOnSquare(int square) {
+            return Squares[square];
         }
 
         private char GetPieceSymOnSquare(int square) {

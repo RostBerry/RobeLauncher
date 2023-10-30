@@ -8,7 +8,6 @@ namespace Chess {
             Console.Write("Enter move: ");
             string? uci = Console.ReadLine();
             Move output = Move.FromUCI(uci);
-            Console.WriteLine(output);
             return output;
         }
     }

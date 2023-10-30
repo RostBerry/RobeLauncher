@@ -119,11 +119,11 @@ namespace Chess {
             if (uci == null) {
                 return InvalidMove;
             }
-            if (uci.Length >= 5) {
+            if (uci.Length >= 4) {
                 int startSquare = Board.SquareNameToSquare(uci[..2]);
                 int targetSquare = Board.SquareNameToSquare(uci[2..4]);
                 int flag = Flag.RegularMove;
-                if (uci.Length == 6) {
+                if (uci.Length == 5) {
                     flag = Board.PieceSymToBin[uci[4]];
                 }
 

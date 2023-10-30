@@ -244,5 +244,9 @@ namespace Chess {
             }
             
         }
+
+        public bool ContainsMove(Move move) {
+            return AllMoves.Contains(move);
+        }
     }
 }
