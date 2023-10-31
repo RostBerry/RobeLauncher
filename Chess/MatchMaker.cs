@@ -10,7 +10,7 @@ namespace Chess {
 
         public MatchMaker() {
             board = new();
-            board.LoadFromFen(Config.MateIn2Fen, true);
+            board.LoadFromFen(Config.PerftFen, true);
             attackGenerator = new(board);
             moveGen = new(board, attackGenerator, true);
 

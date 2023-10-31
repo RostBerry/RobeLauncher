@@ -46,7 +46,9 @@ namespace Chess {
         }
 
         private void GenerateAllKingsAttacks() {
-            AddAttackedSquare(PrecomputedSquareData.SquaresForKing[board.KingSquare[board.CurrentColorIndex]]);
+            if (board.KingSquare[board.CurrentColorIndex] != -1) {
+                AddAttackedSquare(PrecomputedSquareData.SquaresForKing[board.KingSquare[board.CurrentColorIndex]]);
+            }
         }
 
         private void GenerateAllPawnAttacks() {

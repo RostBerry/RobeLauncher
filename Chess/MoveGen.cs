@@ -36,7 +36,8 @@ namespace Chess {
         }
 
         private void GenerateKingMoves() {
-            int startSquare = board.KingSquare[board.CurrentColorIndex];
+            if (board.KingSquare[board.CurrentColorIndex] != -1) {
+                int startSquare = board.KingSquare[board.CurrentColorIndex];
             ulong possibleMoves = PrecomputedSquareData.SquaresForKing[startSquare] & ~(board.AllPiecesBitboard[board.CurrentColorIndex]);
             while (possibleMoves != 0) {
                 int targetSquare = Bitboards.GetLS1BSquare(possibleMoves);
@@ -59,6 +60,7 @@ namespace Chess {
                 if ((queenSideCastlingMask & castlingBlockers) == 0) {
                     AddMove (new Move(startSquare, startSquare - 2, Move.Flag.Castling));
                 }
+            }
             }
         }
 
@@ -140,7 +142,7 @@ namespace Chess {
 
             while (capture2 != 0) {
                 int targetSquare = Bitboards.GetLS1BSquare(capture2);
-                capture1 &= ~Bitboards.BitFromSquare(targetSquare);
+                capture2 &= ~Bitboards.BitFromSquare(targetSquare);
 
                 int startSquare = targetSquare - squaresToCapture2;
 
@@ -181,7 +183,6 @@ namespace Chess {
             AddMove(new Move(startSquare, targetSquare, Move.Flag.KnightPromotion));
 
             if (doAllPromotions) {
-                AddMove(new Move(startSquare, targetSquare, Move.Flag.KnightPromotion));
                 AddMove(new Move(startSquare, targetSquare, Move.Flag.RookPromotion));
                 AddMove(new Move( startSquare, targetSquare, Move.Flag.BishopPromotion));
             }
