@@ -82,7 +82,7 @@ namespace Chess {
 
         public readonly bool IsPromotion {
 			get {
-				return Flag.QueenPromotion >= MoveFlag && MoveFlag > Flag.KnightPromotion;
+				return Flag.QueenPromotion >= MoveFlag && MoveFlag >= Flag.KnightPromotion;
 			}
 		}
 

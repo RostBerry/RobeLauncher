@@ -24,6 +24,7 @@ namespace Chess {
                 attackGenerator = new(board);
                 board.SwitchColor();
                 moveGen = new(board, attackGenerator);
+                moveGen.PrintAllMoves();
 
                 while (true) {
                     board.Print();
