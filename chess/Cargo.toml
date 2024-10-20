@@ -1,0 +1,8 @@
+[package]
+name = "chess"
+version = "0.0.0"
+authors = ["Rostislav Beryoza <rostislav.beryoza.work@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+core = { path = "../core"}
