@@ -1,3 +1,37 @@
 [workspace]
-members = ["chess", "core"]
-workspace.resolver = "2"
+members = ["chess", "core", "launcher", "stockfish"]
+resolver = "2"
+
+[profile.bench]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = "fat"
+codegen-units = 1
+incremental = false
+
+[profile.test]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = true
+codegen-units = 1
+incremental = false
+
+[profile.dev]
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+codegen-units = 1
+incremental = true
+
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = "fat"
+codegen-units = 1
+incremental = false

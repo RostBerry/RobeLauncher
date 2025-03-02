@@ -1,0 +1,12 @@
+pub mod piece;
+pub mod r#move;
+pub mod board;
+pub mod castling;
+pub mod board_representation;
+pub mod config;
+pub mod precomputed_data;
+pub mod bitboards;
+pub mod move_generation;
+pub mod game_manager;
+pub mod player;
+pub mod perft;

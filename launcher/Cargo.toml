@@ -1,0 +1,15 @@
+[package]
+name = "launcher"
+version = "0.0.0"
+authors = ["Rostislav Beryoza <rostislav.beryoza.work@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+chess = {path = "../chess"}
+stockfish = {path = "../stockfish"}
+tokio = { version = "1.0", features = ["full"] }
+mimalloc = { version = "0.1.43", default-features = false }
+
+[features]
+chess_magic_search = []
+game = []

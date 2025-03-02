@@ -1,0 +1,5 @@
+[target.'cfg(target_os = "windows")']
+rustflags = ["-C", "link-args=/STACK:8388608"]
+
+[target.'cfg(unix)']
+rustflags = ["-C", "link-arg=-z", "-C", "link-arg=stack-size=8388608"]

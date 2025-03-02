@@ -5,7 +5,7 @@ pub enum GameMode {
 }
 
 pub enum GameState {
-    Running,
+    InProgress,
     WhiteWon,
     BlackWon,
     Draw
